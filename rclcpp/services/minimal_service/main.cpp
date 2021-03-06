@@ -19,7 +19,21 @@
 #include "rclcpp/rclcpp.hpp"
 
 using AddTwoInts = example_interfaces::srv::AddTwoInts;
-rclcpp::Node::SharedPtr g_node = nullptr;
+
+class Node : public rclcpp::Node
+{
+  using rclcpp::Node::Node;
+
+public:
+  template<typename ServiceT, typename CallbackT>
+  typename rclcpp::Service<ServiceT>::SharedPtr create_async_service(const std::string& service_name,
+                                                      CallbackT&& callback)
+  {
+    return rclcpp::Node::create_service<ServiceT, CallbackT>(service_name, callback); 
+  }
+};
+
+std::shared_ptr<Node> g_node = nullptr;
 
 void handle_service(
   const std::shared_ptr<rmw_request_id_t> request_header,
@@ -33,16 +47,11 @@ void handle_service(
   response->sum = request->a + request->b;
 }
 
-class Node : public rclcpp::Node
-{
-  using rclcpp::Node::Node;
-};
-
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  g_node = Node::make_shared("minimal_service");
-  auto server = g_node->create_service<AddTwoInts>("add_two_ints", handle_service);
+  g_node = std::make_shared<Node>("minimal_service");
+  auto server = g_node->create_async_service<AddTwoInts>("add_two_ints", handle_service);
   rclcpp::spin(g_node);
   rclcpp::shutdown();
   g_node = nullptr;
