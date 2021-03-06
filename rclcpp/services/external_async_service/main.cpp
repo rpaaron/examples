@@ -33,10 +33,15 @@ void handle_service(
   response->sum = request->a + request->b;
 }
 
+class Node : public rclcpp::Node
+{
+  using rclcpp::Node::Node;
+};
+
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  g_node = rclcpp::Node::make_shared("minimal_service");
+  g_node = Node::make_shared("minimal_service");
   auto server = g_node->create_service<AddTwoInts>("add_two_ints", handle_service);
   rclcpp::spin(g_node);
   rclcpp::shutdown();
