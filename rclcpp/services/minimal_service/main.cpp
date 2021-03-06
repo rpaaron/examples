@@ -14,6 +14,7 @@
 
 #include <cinttypes>
 #include <memory>
+#include <chrono>
 
 #include "example_interfaces/srv/add_two_ints.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -24,7 +25,6 @@ template<typename ServiceT>
 class AsyncService : public rclcpp::Service<ServiceT>
 {
   rclcpp::AnyServiceCallback<ServiceT> any_callback_;
-  //using rclcpp::Service<ServiceT>::Service;
 
   void handle_request(std::shared_ptr<rmw_request_id_t> request_header,
                       std::shared_ptr<void> request) override
@@ -32,7 +32,17 @@ class AsyncService : public rclcpp::Service<ServiceT>
     auto typed_request = std::static_pointer_cast<typename ServiceT::Request>(request);
     auto response = std::make_shared<typename ServiceT::Response>();
     any_callback_.dispatch(request_header, typed_request, response);
-    this->send_response(*request_header, *response);
+
+    std::thread t([=](){
+      /* ** takes a long time to respond ** */
+      using namespace std::chrono_literals;
+      std::this_thread::sleep_for(3s);
+
+      // is this even safe to call this from another thread?
+      this->send_response(*request_header, *response);
+    });
+
+    t.detach();
   }
 public:
   AsyncService(std::shared_ptr<rcl_node_t> node_handle, const std::string & service_name, 
