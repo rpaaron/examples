@@ -31,6 +31,7 @@ class AsyncService : public rclcpp::Service<ServiceT>
   {
     auto typed_request = std::static_pointer_cast<typename ServiceT::Request>(request);
     auto response = std::make_shared<typename ServiceT::Response>();
+    // perhaps the callback could return a promise and it go on a queue somewhere?
     any_callback_.dispatch(request_header, typed_request, response);
 
     std::thread t([=](){
